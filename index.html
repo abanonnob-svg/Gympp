@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>IronLog | Upper A</title>
+    
+    <!-- الخط العربي العصري Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- أيقونات FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- مكتبة Chart.js للرسوم البيانية -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- مكتبة Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: {
+                            950: '#080c14',
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                        },
+                        brand: {
+                            500: '#10b981',
+                            600: '#059669',
+                            accent: '#f59e0b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* إخفاء شريط التمرير مع السماح بالتمرير الأفقي */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* تأثير وميض عند انتهاء مؤقت الراحة */
+        @keyframes pulseAlert {
+            0%, 100% { background-color: rgba(16, 185, 129, 0.15); border-color: #10b981; }
+            50% { background-color: rgba(245, 158, 11, 0.25); border-color: #f59e0b; }
+        }
+        .timer-finished {
+            animation: pulseAlert 1s infinite;
+        }
+    </style>
+</head>
+<body class="bg-dark-950 text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-white pb-28 sm:pb-14">
+
+    <!-- شريط التنقل العلوي -->
+    <header class="sticky top-0 z-40 bg-dark-900/95 backdrop-blur-md border-b border-slate-800 shadow-lg">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-brand-500/20 shrink-0">
+                    <i class="fa-solid fa-dumbbell text-dark-950 text-lg transform -rotate-45"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-black tracking-tight text-white leading-tight">Iron<span class="text-brand-500">Log</span></h1>
+                    <p id="headerSubtitle" class="text-[11px] text-slate-400 font-semibold">جدول تمارين: Upper A</p>
+                </div>
+            </div>
+
+            <!-- أزرار التحكم والنسخ الاحتياطي -->
+            <div class="flex items-center gap-1.5 sm:gap-2">
+                <button onclick="openConfirmModal('restoreDefault')" title="استعادة الجداول الافتراضية (Upper A, Lower & Upper B)" class="px-2.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition active:scale-95 flex items-center gap-1.5 text-xs font-bold">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span class="hidden md:inline">استعادة الجداول الافتراضية</span>
+                </button>
+                <button onclick="openAddRoutineModal()" title="إضافة تمرين جديد للجدول" class="px-3 py-2 rounded-xl bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/30 transition active:scale-95 flex items-center gap-1.5 text-xs font-bold">
+                    <i class="fa-solid fa-plus"></i>
+                    <span class="hidden sm:inline">تمرين جديد</span>
+                </button>
+                <button onclick="exportData()" title="تصدير نسخة احتياطية JSON" class="p-2.5 rounded-xl bg-dark-800 hover:bg-dark-700 text-slate-300 hover:text-white border border-slate-700 transition active:scale-95 text-xs">
+                    <i class="fa-solid fa-download text-sky-400"></i>
+                </button>
+                <label title="استيراد نسخة احتياطية JSON" class="cursor-pointer p-2.5 rounded-xl bg-dark-800 hover:bg-dark-700 text-slate-300 hover:text-white border border-slate-700 transition active:scale-95 text-xs">
+                    <i class="fa-solid fa-upload text-emerald-400"></i>
+                    <input type="file" id="importInput" accept=".json" class="hidden" onchange="importData(event)">
+                </label>
+                <button onclick="openConfirmModal('clearAll')" title="مسح البيانات التجريبية / إعادة ضبط" class="p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition active:scale-95 text-xs">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- شريط التبويبات الرئيسية (تمرين اليوم / التطور البياني / السجل الكامل) -->
+        <div class="max-w-4xl mx-auto px-4 pb-2.5 pt-1">
+            <div class="grid grid-cols-3 gap-2 bg-dark-950 p-1 rounded-2xl border border-slate-800">
+                <button onclick="switchTab('workout')" id="tab-workout" class="tab-btn py-2 px-3 rounded-xl text-xs sm:text-sm font-extrabold bg-brand-500 text-dark-950 shadow transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-list-ol"></i>
+                    <span>تمرين اليوم</span>
+                </button>
+                <button onclick="switchTab('charts')" id="tab-charts" class="tab-btn py-2 px-3 rounded-xl text-xs sm:text-sm font-bold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>التطور (Charts)</span>
+                </button>
+                <button onclick="switchTab('history')" id="tab-history" class="tab-btn py-2 px-3 rounded-xl text-xs sm:text-sm font-bold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>السجل الكامل</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="max-w-4xl mx-auto px-4 pt-4 space-y-5">
+
+        <!-- ========================================== -->
+        <!-- التبويب الأول: تمرين اليوم (Upper A) -->
+        <!-- ========================================== -->
+        <div id="view-workout" class="space-y-4">
+            
+            <!-- شريط التنقل بين الجداول (Upper A / إضافة جدول جديد) -->
+            <div class="bg-dark-900 border border-slate-800 rounded-2xl p-3 shadow-lg">
+                <div class="flex items-center justify-between gap-2 mb-2 px-1">
+                    <span class="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-layer-group text-brand-500"></i>
+                        <span>الجداول التدريبية</span>
+                    </span>
+                    <div class="flex items-center gap-3">
+                        <button onclick="openConfirmModal('restoreDefault')" class="md:hidden text-[11px] font-bold text-amber-400 hover:text-amber-300 transition flex items-center gap-1">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>استعادة الافتراضي</span>
+                        </button>
+                        <button onclick="openRenameDayModal()" class="text-[11px] font-bold text-slate-400 hover:text-brand-400 transition flex items-center gap-1">
+                            <i class="fa-solid fa-pen"></i>
+                            <span>تعديل اسم الجدول</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="routineTabsBar" class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                    <!-- يتم توليد تبويبات الجداول (Upper A) وزر (+ إضافة جدول جديد) هنا -->
+                </div>
+            </div>
+
+            <!-- شريط تقدم جلسة اليوم -->
+            <div class="bg-dark-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-brand-500 animate-pulse"></span>
+                        <h2 id="activeRoutineTitle" class="text-base sm:text-lg font-black text-white tracking-wide">Upper A</h2>
+                        <span id="sessionProgressText" class="text-xs font-extrabold text-brand-400 bg-brand-500/10 border border-brand-500/20 px-2.5 py-1 rounded-xl">
+                            0 / 9 مكتمل
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="resetTodayChecks()" title="بدء جلسة جديدة (تصفير علامات الصح)" class="text-xs font-bold text-slate-300 hover:text-white bg-dark-800 hover:bg-dark-700 px-3 py-1.5 rounded-xl border border-slate-700 transition active:scale-95">
+                            <i class="fa-solid fa-rotate-right ml-1 text-brand-400"></i>جلسة جديدة
+                        </button>
+                    </div>
+                </div>
+
+                <!-- شريط التقدم البصري -->
+                <div class="w-full h-2.5 bg-dark-950 rounded-full overflow-hidden border border-slate-800">
+                    <div id="sessionProgressBar" class="h-full bg-gradient-to-l from-brand-500 to-emerald-400 transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- قائمة بطاقات تمارين الجدول بالترتيب (1 إلى 9) -->
+            <div id="routineCardsContainer" class="space-y-4">
+                <!-- يتم توليد البطاقات بالترتيب الدقيق عبر JavaScript -->
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- التبويب الثاني: التطور البياني (Charts) -->
+        <!-- ========================================== -->
+        <div id="view-charts" class="hidden space-y-4">
+            <!-- إحصائيات سريعة -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div class="bg-dark-900 border border-slate-800 p-4 rounded-2xl">
+                    <p class="text-xs text-slate-400 mb-1">إجمالي المجموعات المسجلة</p>
+                    <p id="statTotalLogs" class="text-2xl font-black text-white">0</p>
+                </div>
+                <div class="bg-dark-900 border border-slate-800 p-4 rounded-2xl">
+                    <p class="text-xs text-slate-400 mb-1">أعلى وزن في الجدول</p>
+                    <p id="statMaxWeight" class="text-2xl font-black text-amber-400">0 <span class="text-xs font-normal text-slate-400">كجم</span></p>
+                </div>
+                <div class="col-span-2 sm:col-span-1 bg-dark-900 border border-slate-800 p-4 rounded-2xl">
+                    <p class="text-xs text-slate-400 mb-1">مجموع الأحمال المرفوعة</p>
+                    <p id="statTotalVolume" class="text-2xl font-black text-brand-500">0 <span class="text-xs font-normal text-slate-400">طن</span></p>
+                </div>
+            </div>
+
+            <!-- حاوية الرسم البياني -->
+            <div class="bg-dark-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-brand-500"></i>
+                            <span>منحنى تطور الأوزان</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">اختر التمرين لمراقبة تطور القوة بمرور الوقت</p>
+                    </div>
+                    <select id="chartExerciseSelect" onchange="updateChart()" class="w-full sm:w-60 bg-dark-800 border border-slate-700 text-white font-bold text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-500">
+                    </select>
+                </div>
+                
+                <div class="relative h-64 w-full">
+                    <canvas id="progressChart"></canvas>
+                    <div id="chartEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-slate-500 bg-dark-900/90 rounded-xl">
+                        <i class="fa-solid fa-chart-area text-3xl mb-2 opacity-50"></i>
+                        <p class="text-sm font-bold">لا توجد سجلات كافية لهذا التمرين بعد</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- التبويب الثالث: السجل الكامل (History) -->
+        <!-- ========================================== -->
+        <div id="view-history" class="hidden space-y-4">
+            <div class="flex flex-col sm:flex-row gap-3">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="historySearch" oninput="renderHistory()" placeholder="ابحث باسم التمرين أو الملاحظات..." 
+                        class="w-full bg-dark-900 border border-slate-800 text-white placeholder-slate-500 text-sm rounded-xl pr-10 pl-4 py-3 focus:outline-none focus:border-brand-500">
+                </div>
+                <select id="historyFilterExercise" onchange="renderHistory()" class="bg-dark-900 border border-slate-800 text-white text-sm font-bold rounded-xl px-4 py-3 focus:outline-none focus:border-brand-500">
+                    <option value="الكل">كل التمارين</option>
+                </select>
+            </div>
+
+            <div id="historyListContainer" class="space-y-3">
+                <!-- يتم توليد السجل الكامل هنا -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ========================================== -->
+    <!-- شريط مؤقت الراحة المدمج (Rest Timer Bar) -->
+    <!-- ========================================== -->
+    <div id="restTimerBar" class="fixed bottom-0 inset-x-0 z-40 bg-dark-900/95 backdrop-blur-lg border-t border-slate-800 shadow-2xl px-4 py-3 transition-colors">
+        <div class="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <!-- عرض الوقت وحالته -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-dark-800 border border-slate-700 flex items-center justify-center text-brand-400">
+                    <i class="fa-solid fa-stopwatch text-lg" id="timerIcon"></i>
+                </div>
+                <div>
+                    <span class="block text-[10px] text-slate-400 font-bold">مؤقت الراحة بين المجموعات</span>
+                    <span id="timerDisplay" class="text-xl sm:text-2xl font-black tracking-wider text-white font-mono">00:00</span>
+                </div>
+            </div>
+
+            <!-- أزرار التشغيل السريع -->
+            <div class="flex items-center gap-1.5 sm:gap-2">
+                <button onclick="startRestTimer(60)" class="px-2.5 sm:px-3 py-2 rounded-xl bg-dark-800 hover:bg-brand-500 hover:text-dark-950 text-slate-200 border border-slate-700 text-xs font-extrabold transition active:scale-95">
+                    60ث
+                </button>
+                <button onclick="startRestTimer(90)" class="px-2.5 sm:px-3 py-2 rounded-xl bg-dark-800 hover:bg-brand-500 hover:text-dark-950 text-slate-200 border border-slate-700 text-xs font-extrabold transition active:scale-95">
+                    90ث
+                </button>
+                <button onclick="startRestTimer(120)" class="px-2.5 sm:px-3 py-2 rounded-xl bg-dark-800 hover:bg-brand-500 hover:text-dark-950 text-slate-200 border border-slate-700 text-xs font-extrabold transition active:scale-95">
+                    2د
+                </button>
+                <button onclick="openCustomTimerModal()" title="وقت مخصص" class="px-2.5 py-2 rounded-xl bg-dark-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold transition active:scale-95">
+                    <i class="fa-solid fa-sliders"></i>
+                </button>
+                <button id="stopTimerBtn" onclick="stopRestTimer()" class="hidden px-3 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 text-xs font-extrabold transition active:scale-95">
+                    إيقاف
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة تمرين جديد إلى الجدول -->
+    <div id="addRoutineModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-dark-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-extrabold text-white">إضافة تمرين إلى الجدول</h3>
+                <button onclick="closeModal('addRoutineModal')" class="w-8 h-8 rounded-full bg-dark-800 text-slate-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form onsubmit="addExerciseToRoutine(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">اسم التمرين *</label>
+                    <input type="text" id="newRoutineName" required placeholder="مثال: متوازي (Dips)" class="w-full bg-dark-800 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">العضلة المستهدفة *</label>
+                    <input type="text" id="newRoutineMuscle" required placeholder="مثال: صدر / تراي" class="w-full bg-dark-800 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-brand-500 hover:bg-brand-600 text-dark-950 font-extrabold py-3 rounded-xl transition">إضافة للجدول</button>
+                    <button type="button" onclick="closeModal('addRoutineModal')" class="px-4 py-3 rounded-xl bg-dark-800 text-slate-300 font-bold">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة يوم تدريبي جديد -->
+    <div id="newDayModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-dark-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-extrabold text-white">إضافة جدول تدريبي جديد</h3>
+                <button onclick="closeModal('newDayModal')" class="w-8 h-8 rounded-full bg-dark-800 text-slate-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form onsubmit="createNewDay(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">اسم الجدول *</label>
+                    <input type="text" id="newDayName" required placeholder="مثال: Upper B أو Lower A" class="w-full bg-dark-800 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-brand-500 hover:bg-brand-600 text-dark-950 font-extrabold py-3 rounded-xl transition">إنشاء الجدول</button>
+                    <button type="button" onclick="closeModal('newDayModal')" class="px-4 py-3 rounded-xl bg-dark-800 text-slate-300 font-bold">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة تعديل اسم الجدول الحالي -->
+    <div id="renameDayModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-dark-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-extrabold text-white">تعديل اسم الجدول</h3>
+                <button onclick="closeModal('renameDayModal')" class="w-8 h-8 rounded-full bg-dark-800 text-slate-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form onsubmit="renameActiveDay(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">الاسم الجديد للجدول *</label>
+                    <input type="text" id="renameDayInput" required class="w-full bg-dark-800 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-brand-500 hover:bg-brand-600 text-dark-950 font-extrabold py-3 rounded-xl transition">حفظ الاسم</button>
+                    <button type="button" onclick="closeModal('renameDayModal')" class="px-4 py-3 rounded-xl bg-dark-800 text-slate-300 font-bold">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة تعديل سجل سابق -->
+    <div id="editLogModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-dark-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-extrabold text-white">تعديل سجل التمرين</h3>
+                <button onclick="closeModal('editLogModal')" class="w-8 h-8 rounded-full bg-dark-800 text-slate-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form onsubmit="saveEditedLog(event)" class="space-y-4">
+                <input type="hidden" id="editLogId">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">التمرين</label>
+                    <input type="text" id="editLogName" readonly class="w-full bg-dark-950 border border-slate-800 text-slate-400 rounded-xl px-4 py-2.5 text-sm">
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">الوزن (كجم)</label>
+                        <input type="number" id="editLogWeight" step="0.5" min="0" required class="w-full bg-dark-800 border border-slate-700 text-white font-bold text-center rounded-xl py-2.5">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">العدات</label>
+                        <input type="number" id="editLogReps" min="1" required class="w-full bg-dark-800 border border-slate-700 text-white font-bold text-center rounded-xl py-2.5">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">المجموعات</label>
+                        <input type="number" id="editLogSets" min="1" required class="w-full bg-dark-800 border border-slate-700 text-white font-bold text-center rounded-xl py-2.5">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">التاريخ</label>
+                    <input type="date" id="editLogDate" required class="w-full bg-dark-800 border border-slate-700 text-white rounded-xl px-3 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">ملاحظات</label>
+                    <input type="text" id="editLogNotes" class="w-full bg-dark-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-brand-500 hover:bg-brand-600 text-dark-950 font-extrabold py-3 rounded-xl transition">حفظ التعديلات</button>
+                    <button type="button" onclick="closeModal('editLogModal')" class="px-4 py-3 rounded-xl bg-dark-800 text-slate-300 font-bold">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة مؤقت راحة مخصص -->
+    <div id="customTimerModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-dark-900 border border-slate-800 w-full max-w-xs rounded-3xl p-6 text-center shadow-2xl">
+            <h3 class="text-base font-extrabold text-white mb-3">تحديد وقت راحة مخصص</h3>
+            <form onsubmit="submitCustomTimer(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">المدة بالثواني</label>
+                    <input type="number" id="customSecondsInput" min="5" max="600" value="45" required class="w-full bg-dark-800 border border-slate-700 text-white font-black text-2xl text-center rounded-xl py-3 focus:outline-none focus:border-brand-500">
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 bg-brand-500 text-dark-950 font-extrabold py-2.5 rounded-xl">ابدأ</button>
+                    <button type="button" onclick="closeModal('customTimerModal')" class="flex-1 bg-dark-800 text-slate-300 font-bold py-2.5 rounded-xl">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة تأكيد مخصصة -->
+    <div id="confirmModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-dark-900 border border-slate-800 w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl">
+            <div id="confirmIconBox" class="w-14 h-14 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center text-2xl mx-auto mb-3">
+                <i id="confirmIcon" class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 id="confirmTitle" class="text-lg font-extrabold text-white mb-1">تأكيد الإجراء</h3>
+            <p id="confirmMessage" class="text-xs text-slate-400 mb-5">هل أنت متأكد؟</p>
+            <div class="flex gap-3">
+                <button id="confirmActionBtn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl transition">نعم، متأكد</button>
+                <button onclick="closeModal('confirmModal')" class="flex-1 bg-dark-800 hover:bg-dark-700 text-slate-300 font-bold py-3 rounded-xl transition">تراجع</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- إشعار منبثق (Toast) -->
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 transform -translate-y-4">
+        <div class="bg-dark-800 border border-slate-700 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs sm:text-sm font-bold whitespace-nowrap">
+            <i id="toastIcon" class="fa-solid fa-circle-check text-brand-500 text-base"></i>
+            <span id="toastMessage">تم الحفظ</span>
+        </div>
+    </div>
+
+    <!-- كود JavaScript -->
+    <script>
+        // مفاتيح التخزين المحلي المحدثة لتجنب أي تعارض مع الإصدارات السابقة
+        const KEYS = {
+            ROUTINES: 'ironlog_routines_v6',
+            LOGS: 'ironlog_logs_v6',
+            COMPLETED: 'ironlog_completed_v6',
+            ACTIVE_DAY: 'ironlog_active_day_v6',
+            INIT: 'ironlog_initialized_v6'
+        };
+
+        // الجدول الافتراضي Upper A بالترتيب الدقيق من 1 إلى 9
+        function getDefaultUpperA() {
+            return [
+                { id: 'ex-1', name: 'بنش فلات', muscle: 'صدر', order: 1 },
+                { id: 'ex-2', name: 'سحب عالي', muscle: 'ظهر', order: 2 },
+                { id: 'ex-3', name: 'بنش عالي', muscle: 'صدر', order: 3 },
+                { id: 'ex-4', name: 'سحب أرضي', muscle: 'ظهر', order: 4 },
+                { id: 'ex-5', name: 'أبر باك', muscle: 'ظهر', order: 5 },
+                { id: 'ex-6', name: 'كتف جنابي', muscle: 'أكتاف', order: 6 },
+                { id: 'ex-7', name: 'كتف أمامي', muscle: 'أكتاف', order: 7 },
+                { id: 'ex-8', name: 'تراي', muscle: 'تراي', order: 8 },
+                { id: 'ex-9', name: 'باي', muscle: 'باي', order: 9 }
+            ];
+        }
+
+        // الجدول الافتراضي Lower بالترتيب الدقيق من 1 إلى 7
+        function getDefaultLower() {
+            return [
+                { id: 'ex-l1', name: 'سكوات', muscle: 'أرجل', order: 1 },
+                { id: 'ex-l2', name: 'ديد ليفت', muscle: 'أرجل', order: 2 },
+                { id: 'ex-l3', name: 'أمامي', muscle: 'أرجل', order: 3 },
+                { id: 'ex-l4', name: 'خلفي', muscle: 'أرجل', order: 4 },
+                { id: 'ex-l5', name: 'سمانة', muscle: 'أرجل', order: 5 },
+                { id: 'ex-l6', name: 'بطن', muscle: 'بطن', order: 6 },
+                { id: 'ex-l7', name: 'سواعد', muscle: 'ذراع', order: 7 }
+            ];
+        }
+
+        // الجدول الافتراضي Upper B بالترتيب الدقيق من 1 إلى 9
+        function getDefaultUpperB() {
+            return [
+                { id: 'ex-ub1', name: 'بنش فلات', muscle: 'صدر', order: 1 },
+                { id: 'ex-ub2', name: 'سحب عالي', muscle: 'ظهر', order: 2 },
+                { id: 'ex-ub3', name: 'بنش عالي', muscle: 'صدر', order: 3 },
+                { id: 'ex-ub4', name: 'سحب أرضي', muscle: 'ظهر', order: 4 },
+                { id: 'ex-ub5', name: 'أبر باك', muscle: 'ظهر', order: 5 },
+                { id: 'ex-ub6', name: 'كتف جانبي', muscle: 'أكتاف', order: 6 },
+                { id: 'ex-ub7', name: 'كتف خلفي', muscle: 'أكتاف', order: 7 },
+                { id: 'ex-ub8', name: 'تراي لونج', muscle: 'تراي', order: 8 },
+                { id: 'ex-ub9', name: 'باي هامر', muscle: 'باي', order: 9 }
+            ];
+        }
+
+        // حالة التطبيق
+        let routines = {
+            'Upper A': getDefaultUpperA(),
+            'Lower': getDefaultLower(),
+            'Upper B': getDefaultUpperB()
+        };
+        let activeDay = 'Upper A';
+        let logs = [];
+        let completedToday = {};
+        let progressChartInstance = null;
+        let timerInterval = null;
+        let timerSecondsLeft = 0;
+
+        // تهيئة التطبيق عند التحميل
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                loadData();
+                ensureDefaultSchedulesExist();
+                renderRoutineTabs();
+                renderWorkoutCards();
+                populateExerciseSelects();
+                updateStats();
+                renderHistory();
+            } catch (err) {
+                console.error('Initialization error, recovering defaults:', err);
+                routines = {
+                    'Upper A': getDefaultUpperA(),
+                    'Lower': getDefaultLower(),
+                    'Upper B': getDefaultUpperB()
+                };
+                activeDay = 'Upper A';
+                logs = [];
+                completedToday = {};
+                saveData();
+                renderRoutineTabs();
+                renderWorkoutCards();
+            }
+        });
+
+        // التأكد من وجود جداول Upper A و Lower و Upper B ودمجها بأمان دون المساس بتعديلات المستخدم أو سجلاته
+        function ensureDefaultSchedulesExist() {
+            if (!routines || typeof routines !== 'object' || Array.isArray(routines)) {
+                routines = {};
+            }
+            if (!Array.isArray(routines['Upper A']) || routines['Upper A'].length === 0) {
+                routines['Upper A'] = getDefaultUpperA();
+            }
+            if (!Array.isArray(routines['Lower']) || routines['Lower'].length === 0) {
+                routines['Lower'] = getDefaultLower();
+            }
+            if (!Array.isArray(routines['Upper B']) || routines['Upper B'].length === 0) {
+                routines['Upper B'] = getDefaultUpperB();
+            }
+            if (!activeDay || !routines[activeDay]) {
+                activeDay = 'Upper A';
+            }
+            saveData();
+        }
+
+        // إنشاء بيانات تجريبية واقعية عند أول تشغيل فقط
+        function getSampleLogs() {
+            const today = new Date();
+            const d = (daysAgo) => {
+                const dt = new Date(today);
+                dt.setDate(dt.getDate() - daysAgo);
+                return dt.toISOString().split('T')[0];
+            };
+            return [
+                { id: '101', exerciseId: 'ex-1', routine: 'Upper A', name: 'بنش فلات', muscle: 'صدر', weight: 80, reps: 8, sets: 4, date: d(14), notes: 'تركيز على النزول البطيء' },
+                { id: '102', exerciseId: 'ex-1', routine: 'Upper A', name: 'بنش فلات', muscle: 'صدر', weight: 85, reps: 8, sets: 4, date: d(7), notes: 'زيادة 5 كجم بنجاح' },
+                { id: '103', exerciseId: 'ex-2', routine: 'Upper A', name: 'سحب عالي', muscle: 'ظهر', weight: 60, reps: 10, sets: 4, date: d(7), notes: 'قبضة واسعة' },
+                { id: '104', exerciseId: 'ex-3', routine: 'Upper A', name: 'بنش عالي', muscle: 'صدر', weight: 65, reps: 10, sets: 3, date: d(7), notes: 'زاوية 30 درجة' },
+                { id: '105', exerciseId: 'ex-4', routine: 'Upper A', name: 'سحب أرضي', muscle: 'ظهر', weight: 65, reps: 10, sets: 4, date: d(7), notes: 'ثبات الظهر' },
+                { id: '106', exerciseId: 'ex-5', routine: 'Upper A', name: 'أبر باك', muscle: 'ظهر', weight: 45, reps: 12, sets: 3, date: d(7), notes: 'فتح الكوع للخارج' },
+                { id: '107', exerciseId: 'ex-6', routine: 'Upper A', name: 'كتف جنابي', muscle: 'أكتاف', weight: 12.5, reps: 15, sets: 4, date: d(7), notes: 'بدون مرجحة' },
+                { id: '108', exerciseId: 'ex-7', routine: 'Upper A', name: 'كتف أمامي', muscle: 'أكتاف', weight: 20, reps: 10, sets: 3, date: d(7), notes: 'دمبل أو جهاز' },
+                { id: '109', exerciseId: 'ex-8', routine: 'Upper A', name: 'تراي', muscle: 'تراي', weight: 30, reps: 12, sets: 3, date: d(7), notes: 'حبل كابل' },
+                { id: '110', exerciseId: 'ex-9', routine: 'Upper A', name: 'باي', muscle: 'باي', weight: 15, reps: 10, sets: 3, date: d(7), notes: 'تبادل دمبل' },
+                { id: '111', exerciseId: 'ex-l1', routine: 'Lower', name: 'سكوات', muscle: 'أرجل', weight: 100, reps: 8, sets: 4, date: d(5), notes: 'نزول كامل بثبات' },
+                { id: '112', exerciseId: 'ex-l2', routine: 'Lower', name: 'ديد ليفت', muscle: 'أرجل', weight: 110, reps: 6, sets: 3, date: d(5), notes: 'استقامة الظهر' },
+                { id: '113', exerciseId: 'ex-l3', routine: 'Lower', name: 'أمامي', muscle: 'أرجل', weight: 50, reps: 12, sets: 3, date: d(5), notes: 'عصر العضلة في الأعلى' },
+                { id: '114', exerciseId: 'ex-l4', routine: 'Lower', name: 'خلفي', muscle: 'أرجل', weight: 40, reps: 12, sets: 3, date: d(5), notes: 'تحكم كامل' },
+                { id: '115', exerciseId: 'ex-l5', routine: 'Lower', name: 'سمانة', muscle: 'أرجل', weight: 60, reps: 15, sets: 4, date: d(5), notes: 'ثبات ثانية في الأعلى' },
+                { id: '116', exerciseId: 'ex-ub6', routine: 'Upper B', name: 'كتف جانبي', muscle: 'أكتاف', weight: 12.5, reps: 15, sets: 4, date: d(3), notes: 'تحكم في النزول' },
+                { id: '117', exerciseId: 'ex-ub7', routine: 'Upper B', name: 'كتف خلفي', muscle: 'أكتاف', weight: 35, reps: 15, sets: 3, date: d(3), notes: 'فراشة خلفي' },
+                { id: '118', exerciseId: 'ex-ub8', routine: 'Upper B', name: 'تراي لونج', muscle: 'تراي', weight: 25, reps: 12, sets: 3, date: d(3), notes: 'تمديد كامل خلف الرأس' },
+                { id: '119', exerciseId: 'ex-ub9', routine: 'Upper B', name: 'باي هامر', muscle: 'باي', weight: 17.5, reps: 10, sets: 3, date: d(3), notes: 'قبضة محايدة' }
+            ];
+        }
+
+        // تحميل البيانات بأمان مع دمج الجداول تلقائياً للمستخدمين الحاليين دون فقدان السجلات
+        function loadData() {
+            const isInitialized = localStorage.getItem(KEYS.INIT);
+            if (!isInitialized) {
+                let migratedLogs = null;
+                let extraRoutines = {};
+
+                try {
+                    const prevLogs = localStorage.getItem('ironlog_logs_v5') || localStorage.getItem('ironlog_logs_v4') || localStorage.getItem('ironlog_upper_logs_v3');
+                    if (prevLogs) {
+                        const parsed = JSON.parse(prevLogs);
+                        if (Array.isArray(parsed)) {
+                            migratedLogs = parsed.map(l => ({ ...l, routine: l.routine || 'Upper A' }));
+                        }
+                    }
+
+                    const prevRoutines = localStorage.getItem('ironlog_routines_v5') || localStorage.getItem('ironlog_routines_v4') || localStorage.getItem('ironlog_upper_routines_v3');
+                    if (prevRoutines) {
+                        const parsedR = JSON.parse(prevRoutines);
+                        if (parsedR && typeof parsedR === 'object') {
+                            Object.keys(parsedR).forEach(k => {
+                                if (k !== 'Upper A' && k !== 'Lower' && k !== 'Upper B' && k !== 'Upper Day' && Array.isArray(parsedR[k])) {
+                                    extraRoutines[k] = parsedR[k];
+                                }
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Migration skipped due to malformed old data');
+                }
+
+                routines = {
+                    'Upper A': getDefaultUpperA(),
+                    'Lower': getDefaultLower(),
+                    'Upper B': getDefaultUpperB(),
+                    ...extraRoutines
+                };
+                logs = migratedLogs !== null ? migratedLogs : getSampleLogs();
+                completedToday = {};
+                activeDay = 'Upper A';
+
+                localStorage.setItem(KEYS.INIT, 'true');
+                saveData();
+            } else {
+                try {
+                    const savedRoutines = localStorage.getItem(KEYS.ROUTINES);
+                    const savedLogs = localStorage.getItem(KEYS.LOGS);
+                    const savedCompleted = localStorage.getItem(KEYS.COMPLETED);
+                    const savedActiveDay = localStorage.getItem(KEYS.ACTIVE_DAY);
+
+                    routines = savedRoutines ? JSON.parse(savedRoutines) : {};
+                    if (!Array.isArray(routines['Upper A']) || routines['Upper A'].length === 0) {
+                        routines['Upper A'] = getDefaultUpperA();
+                    }
+                    if (!Array.isArray(routines['Lower']) || routines['Lower'].length === 0) {
+                        routines['Lower'] = getDefaultLower();
+                    }
+                    if (!Array.isArray(routines['Upper B']) || routines['Upper B'].length === 0) {
+                        routines['Upper B'] = getDefaultUpperB();
+                    }
+
+                    logs = savedLogs ? JSON.parse(savedLogs) : [];
+                    completedToday = savedCompleted ? JSON.parse(savedCompleted) : {};
+                    activeDay = (savedActiveDay && routines[savedActiveDay]) ? savedActiveDay : 'Upper A';
+                } catch (e) {
+                    routines = {
+                        'Upper A': getDefaultUpperA(),
+                        'Lower': getDefaultLower(),
+                        'Upper B': getDefaultUpperB()
+                    };
+                    logs = [];
+                    completedToday = {};
+                    activeDay = 'Upper A';
+                }
+            }
+        }
+
+        // حفظ البيانات في localStorage
+        function saveData() {
+            try {
+                localStorage.setItem(KEYS.ROUTINES, JSON.stringify(routines));
+                localStorage.setItem(KEYS.LOGS, JSON.stringify(logs));
+                localStorage.setItem(KEYS.COMPLETED, JSON.stringify(completedToday));
+                localStorage.setItem(KEYS.ACTIVE_DAY, activeDay);
+            } catch (e) {
+                console.error('Failed to save to localStorage:', e);
+            }
+        }
+
+        // استعادة الجداول الافتراضية (Upper A و Lower و Upper B) فوراً مع الحفاظ على السجلات
+        function restoreDefaultSchedules() {
+            routines['Upper A'] = getDefaultUpperA();
+            routines['Lower'] = getDefaultLower();
+            routines['Upper B'] = getDefaultUpperB();
+            if (!routines[activeDay]) activeDay = 'Upper A';
+            saveData();
+            renderRoutineTabs();
+            renderWorkoutCards();
+            populateExerciseSelects();
+            showToast('تمت استعادة جداول Upper A و Lower و Upper B بترتيبها الكامل', 'success');
+        }
+
+        // عرض شريط تبويبات الجداول (Upper A و Lower و Upper B أولاً + أي جداول إضافية + زر إضافة جدول)
+        function renderRoutineTabs() {
+            const bar = document.getElementById('routineTabsBar');
+            if (!bar) return;
+
+            const defaultOrder = ['Upper A', 'Lower', 'Upper B'];
+            const otherDays = Object.keys(routines).filter(d => !defaultOrder.includes(d));
+            const dayNames = [...defaultOrder, ...otherDays];
+
+            let html = dayNames.map(day => {
+                const isActive = day === activeDay;
+                const count = Array.isArray(routines[day]) ? routines[day].length : 0;
+                return `
+                    <button onclick="selectRoutineTab('${day.replace(/'/g, "\\'")}')" 
+                        class="shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center gap-2 border ${
+                            isActive 
+                            ? 'bg-brand-500 text-dark-950 border-brand-400 shadow-lg shadow-brand-500/20' 
+                            : 'bg-dark-800 hover:bg-dark-700 text-slate-300 border-slate-700'
+                        }">
+                        <i class="fa-solid fa-dumbbell text-xs ${isActive ? 'text-dark-950' : 'text-brand-400'}"></i>
+                        <span>${day}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded-md font-black ${
+                            isActive ? 'bg-dark-950/20 text-dark-950' : 'bg-dark-950 text-slate-400'
+                        }">${count}</span>
+                    </button>
+                `;
+            }).join('');
+
+            // زر إضافة جدول جديد
+            html += `
+                <button onclick="openNewDayModal()" 
+                    class="shrink-0 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold bg-dark-950 hover:bg-dark-800 text-brand-400 border border-dashed border-brand-500/40 hover:border-brand-500 transition flex items-center gap-1.5 active:scale-95">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>إضافة جدول جديد</span>
+                </button>
+            `;
+
+            bar.innerHTML = html;
+
+            // تحديث العناوين العلوية لتعكس الجدول النشط
+            document.title = `IronLog | ${activeDay}`;
+            document.getElementById('headerSubtitle').textContent = `جدول تمارين: ${activeDay}`;
+            document.getElementById('activeRoutineTitle').textContent = activeDay;
+        }
+
+        // التبديل بين تبويبات الجداول
+        function selectRoutineTab(dayName) {
+            if (!routines[dayName]) return;
+            activeDay = dayName;
+            saveData();
+            renderRoutineTabs();
+            renderWorkoutCards();
+        }
+
+        // الحصول على إحصائيات تمرين معين (آخر جلسة + أعلى وزن PR)
+        function getExerciseStats(exerciseName) {
+            const matching = logs.filter(l => l.name.trim() === exerciseName.trim());
+            if (matching.length === 0) return { lastLog: null, prWeight: 0 };
+
+            const sortedByDate = [...matching].sort((a, b) => {
+                if (b.date !== a.date) return b.date.localeCompare(a.date);
+                return Number(b.id) - Number(a.id);
+            });
+
+            const lastLog = sortedByDate[0];
+            const prWeight = Math.max(...matching.map(m => Number(m.weight) || 0));
+            return { lastLog, prWeight };
+        }
+
+        // عرض بطاقات التمارين بالترتيب المحدد
+        function renderWorkoutCards() {
+            const container = document.getElementById('routineCardsContainer');
+            if (!container) return;
+
+            if (activeDay === 'Upper A' && (!Array.isArray(routines['Upper A']) || routines['Upper A'].length === 0)) {
+                routines['Upper A'] = getDefaultUpperA();
+                saveData();
+            } else if (activeDay === 'Lower' && (!Array.isArray(routines['Lower']) || routines['Lower'].length === 0)) {
+                routines['Lower'] = getDefaultLower();
+                saveData();
+            } else if (activeDay === 'Upper B' && (!Array.isArray(routines['Upper B']) || routines['Upper B'].length === 0)) {
+                routines['Upper B'] = getDefaultUpperB();
+                saveData();
+            }
+
+            const rawList = Array.isArray(routines[activeDay]) ? routines[activeDay] : [];
+            const currentExercises = [...rawList].sort((a, b) => (a.order || 0) - (b.order || 0));
+
+            // تحديث شريط التقدم
+            const completedCount = currentExercises.filter(ex => completedToday[ex.id]).length;
+            const totalCount = currentExercises.length;
+            const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+            
+            document.getElementById('sessionProgressText').textContent = `${completedCount} / ${totalCount} مكتمل`;
+            document.getElementById('sessionProgressBar').style.width = `${percentage}%`;
+
+            if (currentExercises.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-dark-900 border border-slate-800 rounded-2xl p-8 text-center">
+                        <i class="fa-solid fa-clipboard-list text-3xl text-slate-600 mb-2"></i>
+                        <p class="text-slate-300 font-bold text-sm mb-3">لا توجد تمارين في جدول "${activeDay}" حتى الآن</p>
+                        <div class="flex flex-wrap items-center justify-center gap-2">
+                            <button onclick="openAddRoutineModal()" class="px-4 py-2.5 rounded-xl bg-brand-500 text-dark-950 font-extrabold text-xs">
+                                <i class="fa-solid fa-plus ml-1"></i> إضافة أول تمرين للجدول
+                            </button>
+                            ${(activeDay === 'Upper A' || activeDay === 'Lower' || activeDay === 'Upper B') ? `
+                            <button onclick="restoreDefaultSchedules()" class="px-4 py-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 font-extrabold text-xs">
+                                <i class="fa-solid fa-wand-magic-sparkles ml-1"></i> استعادة الجداول الافتراضية
+                            </button>` : ''}
+                        </div>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = currentExercises.map((ex, index) => {
+                const { lastLog, prWeight } = getExerciseStats(ex.name);
+                const isDone = !!completedToday[ex.id];
+                
+                // القيم الافتراضية للحقول مأخوذة من آخر جلسة لسرعة التسجيل
+                const defaultWeight = lastLog ? lastLog.weight : '';
+                const defaultReps = lastLog ? lastLog.reps : 10;
+                const defaultSets = lastLog ? lastLog.sets : 3;
+
+                return `
+                <div id="card-${ex.id}" class="bg-dark-900 border ${isDone ? 'border-brand-500/60 bg-gradient-to-b from-dark-900 to-emerald-950/20' : 'border-slate-800'} rounded-2xl p-4 shadow-lg transition-all duration-300">
+                    
+                    <!-- رأس البطاقة: رقم الترتيب + الاسم + العضلة + أزرار الترتيب والحذف + علامة الإنجاز -->
+                    <div class="flex items-start justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-3">
+                            <!-- رقم الترتيب -->
+                            <div class="w-9 h-9 rounded-xl ${isDone ? 'bg-brand-500 text-dark-950' : 'bg-dark-800 text-brand-400 border border-slate-700'} font-black text-base flex items-center justify-center shrink-0 shadow">
+                                ${index + 1}
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h3 class="text-base sm:text-lg font-extrabold text-white">${ex.name}</h3>
+                                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
+                                        ${ex.muscle}
+                                    </span>
+                                </div>
+                                
+                                <!-- شريط المقارنة السريع: آخر جلسة + PR -->
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs">
+                                    <span class="text-slate-400">
+                                        <i class="fa-solid fa-clock-rotate-left text-sky-400 ml-1"></i>آخر مرة: 
+                                        <strong class="text-slate-200">${lastLog ? `${lastLog.weight} كجم × ${lastLog.reps}` : 'لا يوجد'}</strong>
+                                    </span>
+                                    <span class="text-amber-400/90 font-bold">
+                                        <i class="fa-solid fa-trophy text-amber-400 ml-1"></i>PR: 
+                                        <strong>${prWeight > 0 ? `${prWeight} كجم` : '-'}</strong>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- أزرار التحكم بالترتيب وزر الإنجاز -->
+                        <div class="flex items-center gap-1 shrink-0">
+                            <div class="flex flex-col gap-0.5 ml-1">
+                                <button onclick="moveExerciseOrder('${ex.id}', -1)" ${index === 0 ? 'disabled' : ''} title="تحريك لأعلى" class="w-6 h-5 rounded bg-dark-800 hover:bg-dark-700 disabled:opacity-30 text-slate-400 hover:text-white flex items-center justify-center text-[10px]">
+                                    <i class="fa-solid fa-chevron-up"></i>
+                                </button>
+                                <button onclick="moveExerciseOrder('${ex.id}', 1)" ${index === currentExercises.length - 1 ? 'disabled' : ''} title="تحريك لأسفل" class="w-6 h-5 rounded bg-dark-800 hover:bg-dark-700 disabled:opacity-30 text-slate-400 hover:text-white flex items-center justify-center text-[10px]">
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <button onclick="removeExerciseFromRoutine('${ex.id}')" title="حذف التمرين من الجدول" class="w-8 h-8 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                            <button onclick="toggleExerciseComplete('${ex.id}')" title="تحديد كمكتمل" class="w-10 h-10 rounded-xl border ${isDone ? 'bg-brand-500 border-brand-500 text-dark-950 shadow-lg shadow-brand-500/20' : 'bg-dark-800 border-slate-700 text-slate-500 hover:text-slate-300'} flex items-center justify-center text-lg transition active:scale-90">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- حقول الإدخال السريع بيد واحدة (الوزن / العدات / المجموعات / زر التسجيل) -->
+                    <div class="grid grid-cols-12 gap-2 items-end bg-dark-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                        <div class="col-span-4 sm:col-span-3">
+                            <label class="block text-[10px] font-bold text-slate-400 text-center mb-1">الوزن (كجم)</label>
+                            <input type="number" id="weight-${ex.id}" step="0.5" min="0" value="${defaultWeight}" placeholder="0"
+                                class="w-full bg-dark-800 border border-slate-700 focus:border-brand-500 text-white font-black text-base text-center rounded-xl py-2.5 focus:outline-none">
+                        </div>
+                        <div class="col-span-3 sm:col-span-3">
+                            <label class="block text-[10px] font-bold text-slate-400 text-center mb-1">العدات</label>
+                            <input type="number" id="reps-${ex.id}" min="1" value="${defaultReps}" placeholder="10"
+                                class="w-full bg-dark-800 border border-slate-700 focus:border-brand-500 text-white font-black text-base text-center rounded-xl py-2.5 focus:outline-none">
+                        </div>
+                        <div class="col-span-2 sm:col-span-2">
+                            <label class="block text-[10px] font-bold text-slate-400 text-center mb-1">مجموعات</label>
+                            <input type="number" id="sets-${ex.id}" min="1" value="${defaultSets}" placeholder="3"
+                                class="w-full bg-dark-800 border border-slate-700 focus:border-brand-500 text-white font-black text-base text-center rounded-xl py-2.5 focus:outline-none">
+                        </div>
+                        <div class="col-span-3 sm:col-span-4">
+                            <button onclick="quickLogExercise('${ex.id}')" class="w-full h-[46px] bg-brand-500 hover:bg-brand-600 active:scale-95 text-dark-950 font-black text-xs sm:text-sm rounded-xl shadow-md shadow-brand-500/15 transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>تسجيل</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- حقل ملاحظة اختياري سريع -->
+                    <div class="mt-2">
+                        <input type="text" id="notes-${ex.id}" placeholder="ملاحظة سريعة (اختياري)..." 
+                            class="w-full bg-transparent border-b border-slate-800 focus:border-slate-600 text-slate-300 placeholder-slate-600 text-xs py-1 px-1 focus:outline-none">
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // تحريك ترتيب التمرين لأعلى أو لأسفل داخل الجدول
+        function moveExerciseOrder(exerciseId, direction) {
+            const list = routines[activeDay];
+            if (!list) return;
+            list.sort((a, b) => a.order - b.order);
+            const idx = list.findIndex(e => e.id === exerciseId);
+            const targetIdx = idx + direction;
+            if (idx < 0 || targetIdx < 0 || targetIdx >= list.length) return;
+
+            const temp = list[idx];
+            list[idx] = list[targetIdx];
+            list[targetIdx] = temp;
+
+            list.forEach((item, i) => item.order = i + 1);
+            saveData();
+            renderWorkoutCards();
+        }
+
+        // تسجيل سريع بضغطة واحدة
+        function quickLogExercise(exerciseId) {
+            const ex = (routines[activeDay] || []).find(item => item.id === exerciseId);
+            if (!ex) return;
+
+            const weightVal = parseFloat(document.getElementById(`weight-${exerciseId}`).value);
+            const repsVal = parseInt(document.getElementById(`reps-${exerciseId}`).value);
+            const setsVal = parseInt(document.getElementById(`sets-${exerciseId}`).value) || 3;
+            const notesVal = document.getElementById(`notes-${exerciseId}`).value.trim();
+
+            if (isNaN(weightVal) || weightVal < 0 || isNaN(repsVal) || repsVal <= 0) {
+                showToast('يرجى إدخال الوزن والعدات بشكل صحيح', 'error');
+                return;
+            }
+
+            const { prWeight } = getExerciseStats(ex.name);
+            const isNewPR = weightVal > prWeight && prWeight > 0;
+
+            const newEntry = {
+                id: Date.now().toString(),
+                exerciseId: ex.id,
+                routine: activeDay,
+                name: ex.name,
+                muscle: ex.muscle,
+                weight: weightVal,
+                reps: repsVal,
+                sets: setsVal,
+                date: new Date().toISOString().split('T')[0],
+                notes: notesVal
+            };
+
+            logs.unshift(newEntry);
+            completedToday[ex.id] = true;
+            saveData();
+
+            renderWorkoutCards();
+            populateExerciseSelects();
+            updateStats();
+            renderHistory();
+
+            if (isNewPR) {
+                showToast(`رقم قياسي جديد (PR) في ${ex.name}: ${weightVal} كجم!`, 'pr');
+            } else {
+                showToast(`تم تسجيل ${ex.name} (${weightVal} كجم × ${repsVal})`, 'success');
+            }
+        }
+
+        // تبديل حالة إتمام التمرين (صح / غير مكتمل)
+        function toggleExerciseComplete(exerciseId) {
+            completedToday[exerciseId] = !completedToday[exerciseId];
+            saveData();
+            renderWorkoutCards();
+        }
+
+        // تصفير علامات الصح لبدء جلسة تمرين جديدة
+        function resetTodayChecks() {
+            const currentExercises = routines[activeDay] || [];
+            currentExercises.forEach(ex => {
+                delete completedToday[ex.id];
+            });
+            saveData();
+            renderWorkoutCards();
+            showToast('تم تصفير علامات الإنجاز لبدء جلسة جديدة', 'info');
+        }
+
+        // إضافة تمرين جديد إلى الجدول الحالي
+        function openAddRoutineModal() {
+            document.getElementById('newRoutineName').value = '';
+            document.getElementById('newRoutineMuscle').value = '';
+            document.getElementById('addRoutineModal').classList.remove('hidden');
+        }
+
+        function addExerciseToRoutine(e) {
+            e.preventDefault();
+            const name = document.getElementById('newRoutineName').value.trim();
+            const muscle = document.getElementById('newRoutineMuscle').value.trim();
+            if (!name || !muscle) return;
+
+            const currentList = routines[activeDay] || [];
+            const newEx = {
+                id: 'ex-' + Date.now(),
+                name,
+                muscle,
+                order: currentList.length + 1
+            };
+            currentList.push(newEx);
+            routines[activeDay] = currentList;
+            saveData();
+
+            closeModal('addRoutineModal');
+            renderRoutineTabs();
+            renderWorkoutCards();
+            populateExerciseSelects();
+            showToast(`تمت إضافة "${name}" إلى ${activeDay}`, 'success');
+        }
+
+        // حذف تمرين من الجدول الحالي
+        function removeExerciseFromRoutine(exerciseId) {
+            openConfirmModal('removeExercise', exerciseId);
+        }
+
+        // إنشاء يوم تدريبي جديد (مثل Upper B / Lower A)
+        function openNewDayModal() {
+            document.getElementById('newDayName').value = '';
+            document.getElementById('newDayModal').classList.remove('hidden');
+        }
+
+        function createNewDay(e) {
+            e.preventDefault();
+            const dayName = document.getElementById('newDayName').value.trim();
+            if (!dayName) return;
+            if (routines[dayName]) {
+                showToast('هذا الجدول موجود بالفعل', 'error');
+                return;
+            }
+            routines[dayName] = [];
+            activeDay = dayName;
+            saveData();
+
+            closeModal('newDayModal');
+            renderRoutineTabs();
+            renderWorkoutCards();
+            showToast(`تم إنشاء جدول "${dayName}" بنجاح`, 'success');
+        }
+
+        // تعديل اسم الجدول النشط
+        function openRenameDayModal() {
+            document.getElementById('renameDayInput').value = activeDay;
+            document.getElementById('renameDayModal').classList.remove('hidden');
+        }
+
+        function renameActiveDay(e) {
+            e.preventDefault();
+            const newName = document.getElementById('renameDayInput').value.trim();
+            if (!newName || newName === activeDay) {
+                closeModal('renameDayModal');
+                return;
+            }
+            if (routines[newName]) {
+                showToast('يوجد جدول آخر بنفس هذا الاسم', 'error');
+                return;
+            }
+
+            const updatedRoutines = {};
+            Object.keys(routines).forEach(key => {
+                if (key === activeDay) {
+                    updatedRoutines[newName] = routines[key];
+                } else {
+                    updatedRoutines[key] = routines[key];
+                }
+            });
+
+            logs.forEach(l => {
+                if (l.routine === activeDay) l.routine = newName;
+            });
+
+            routines = updatedRoutines;
+            activeDay = newName;
+            saveData();
+
+            closeModal('renameDayModal');
+            renderRoutineTabs();
+            renderWorkoutCards();
+            showToast(`تم تغيير اسم الجدول إلى "${newName}"`, 'success');
+        }
+
+        // التنقل بين التبويبات
+        function switchTab(tabName) {
+            const views = ['workout', 'charts', 'history'];
+            views.forEach(v => {
+                const viewEl = document.getElementById(`view-${v}`);
+                const btnEl = document.getElementById(`tab-${v}`);
+                if (v === tabName) {
+                    viewEl.classList.remove('hidden');
+                    btnEl.className = 'tab-btn py-2 px-3 rounded-xl text-xs sm:text-sm font-extrabold bg-brand-500 text-dark-950 shadow transition flex items-center justify-center gap-1.5';
+                } else {
+                    viewEl.classList.add('hidden');
+                    btnEl.className = 'tab-btn py-2 px-3 rounded-xl text-xs sm:text-sm font-bold text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5';
+                }
+            });
+
+            if (tabName === 'charts') {
+                updateStats();
+                updateChart();
+            } else if (tabName === 'history') {
+                renderHistory();
+            }
+        }
+
+        // تحديث الإحصائيات العامة
+        function updateStats() {
+            document.getElementById('statTotalLogs').textContent = logs.length;
+            const maxW = logs.length > 0 ? Math.max(...logs.map(l => Number(l.weight) || 0)) : 0;
+            document.getElementById('statMaxWeight').innerHTML = `${maxW} <span class="text-xs font-normal text-slate-400">كجم</span>`;
+
+            const totalVolumeKg = logs.reduce((acc, l) => acc + ((Number(l.weight) || 0) * (Number(l.reps) || 0) * (Number(l.sets) || 1)), 0);
+            const totalVolumeTons = (totalVolumeKg / 1000).toFixed(1);
+            document.getElementById('statTotalVolume').innerHTML = `${totalVolumeTons} <span class="text-xs font-normal text-slate-400">طن</span>`;
+        }
+
+        // تعبئة قوائم التمارين للرسوم البيانية وفلترة السجل
+        function populateExerciseSelects() {
+            const allNamesSet = new Set();
+            Object.values(routines).forEach(list => {
+                if (Array.isArray(list)) list.forEach(ex => allNamesSet.add(ex.name));
+            });
+            logs.forEach(l => allNamesSet.add(l.name));
+
+            const names = Array.from(allNamesSet);
+            const chartSelect = document.getElementById('chartExerciseSelect');
+            const filterSelect = document.getElementById('historyFilterExercise');
+
+            const prevChartVal = chartSelect.value;
+            const prevFilterVal = filterSelect.value;
+
+            chartSelect.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join('');
+            if (prevChartVal && names.includes(prevChartVal)) chartSelect.value = prevChartVal;
+
+            filterSelect.innerHTML = `<option value="الكل">كل التمارين</option>` + names.map(n => `<option value="${n}">${n}</option>`).join('');
+            if (prevFilterVal && (prevFilterVal === 'الكل' || names.includes(prevFilterVal))) filterSelect.value = prevFilterVal;
+        }
+
+        // رسم وتحديث الرسم البياني لتطور الأوزان
+        function updateChart() {
+            const selectedName = document.getElementById('chartExerciseSelect').value;
+            const emptyState = document.getElementById('chartEmptyState');
+            const canvas = document.getElementById('progressChart');
+
+            const filtered = logs
+                .filter(l => l.name === selectedName)
+                .sort((a, b) => a.date.localeCompare(b.date) || Number(a.id) - Number(b.id));
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                if (progressChartInstance) {
+                    progressChartInstance.destroy();
+                    progressChartInstance = null;
+                }
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            const labels = filtered.map(item => item.date);
+            const dataPoints = filtered.map(item => Number(item.weight));
+
+            if (progressChartInstance) {
+                progressChartInstance.destroy();
+            }
+
+            const ctx = canvas.getContext('2d');
+            progressChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: `الوزن (كجم) - ${selectedName}`,
+                        data: dataPoints,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#f59e0b',
+                        pointBorderColor: '#0f172a',
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        fill: true,
+                        tension: 0.35
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#e2e8f0', font: { family: 'Cairo', weight: 'bold' } }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleFont: { family: 'Cairo' },
+                            bodyFont: { family: 'Cairo' },
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const item = filtered[context.dataIndex];
+                                    return `العدات: ${item.reps} | المجموعات: ${item.sets}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#94a3b8', font: { family: 'Cairo' } },
+                            grid: { color: 'rgba(51, 65, 85, 0.4)' }
+                        },
+                        y: {
+                            ticks: { color: '#94a3b8', font: { family: 'Cairo' } },
+                            grid: { color: 'rgba(51, 65, 85, 0.4)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // عرض السجل الكامل للتمارين
+        function renderHistory() {
+            const container = document.getElementById('historyListContainer');
+            const searchQuery = document.getElementById('historySearch').value.trim().toLowerCase();
+            const filterExercise = document.getElementById('historyFilterExercise').value;
+
+            const filtered = logs.filter(item => {
+                const matchesName = filterExercise === 'الكل' || item.name === filterExercise;
+                const matchesSearch = !searchQuery || 
+                    item.name.toLowerCase().includes(searchQuery) || 
+                    (item.notes && item.notes.toLowerCase().includes(searchQuery)) ||
+                    (item.routine && item.routine.toLowerCase().includes(searchQuery));
+                return matchesName && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-dark-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
+                        <i class="fa-solid fa-folder-open text-3xl mb-2 opacity-50"></i>
+                        <p class="text-sm font-bold">لا توجد سجلات مطابقة</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(item => {
+                const { prWeight } = getExerciseStats(item.name);
+                const isPR = Number(item.weight) === prWeight && prWeight > 0;
+
+                return `
+                <div class="bg-dark-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-3">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-extrabold text-white text-sm sm:text-base">${item.name}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-dark-800 text-slate-400 border border-slate-700">${item.routine || 'Upper A'}</span>
+                            ${isPR ? `<span class="text-[10px] font-black px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30"><i class="fa-solid fa-trophy ml-1"></i>PR</span>` : ''}
+                        </div>
+                        <div class="flex items-center gap-3 text-xs text-slate-300 font-bold">
+                            <span class="text-brand-400 text-sm">${item.weight} كجم</span>
+                            <span>× ${item.reps} عدة</span>
+                            <span>(${item.sets} مجموعات)</span>
+                            <span class="text-slate-500 font-normal">${item.date}</span>
+                        </div>
+                        ${item.notes ? `<p class="text-xs text-slate-400"><i class="fa-regular fa-note-sticky ml-1"></i>${item.notes}</p>` : ''}
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button onclick="openEditLogModal('${item.id}')" title="تعديل" class="w-9 h-9 rounded-xl bg-dark-800 hover:bg-dark-700 text-sky-400 border border-slate-700 flex items-center justify-center text-xs transition">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button onclick="openConfirmModal('deleteLog', '${item.id}')" title="حذف" class="w-9 h-9 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 flex items-center justify-center text-xs transition">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // فتح نافذة تعديل سجل سابق
+        function openEditLogModal(logId) {
+            const entry = logs.find(l => l.id === logId);
+            if (!entry) return;
+
+            document.getElementById('editLogId').value = entry.id;
+            document.getElementById('editLogName').value = entry.name;
+            document.getElementById('editLogWeight').value = entry.weight;
+            document.getElementById('editLogReps').value = entry.reps;
+            document.getElementById('editLogSets').value = entry.sets;
+            document.getElementById('editLogDate').value = entry.date;
+            document.getElementById('editLogNotes').value = entry.notes || '';
+
+            document.getElementById('editLogModal').classList.remove('hidden');
+        }
+
+        function saveEditedLog(e) {
+            e.preventDefault();
+            const id = document.getElementById('editLogId').value;
+            const entry = logs.find(l => l.id === id);
+            if (!entry) return;
+
+            entry.weight = parseFloat(document.getElementById('editLogWeight').value);
+            entry.reps = parseInt(document.getElementById('editLogReps').value);
+            entry.sets = parseInt(document.getElementById('editLogSets').value);
+            entry.date = document.getElementById('editLogDate').value;
+            entry.notes = document.getElementById('editLogNotes').value.trim();
+
+            saveData();
+            closeModal('editLogModal');
+            renderWorkoutCards();
+            updateStats();
+            renderHistory();
+            showToast('تم تحديث السجل بنجاح', 'success');
+        }
+
+        // ==========================================
+        // مؤقت الراحة المدمج + التنبيه الصوتي
+        // ==========================================
+        function startRestTimer(seconds) {
+            stopRestTimer(false);
+            timerSecondsLeft = seconds;
+            const bar = document.getElementById('restTimerBar');
+            bar.classList.remove('timer-finished');
+            document.getElementById('stopTimerBtn').classList.remove('hidden');
+            updateTimerDisplay();
+
+            timerInterval = setInterval(() => {
+                timerSecondsLeft--;
+                updateTimerDisplay();
+                if (timerSecondsLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    bar.classList.add('timer-finished');
+                    playTimerBeep();
+                    if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
+                    showToast('انتهت فترة الراحة! استعد للمجموعة التالية', 'pr');
+                }
+            }, 1000);
+        }
+
+        function stopRestTimer(resetDisplay = true) {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            const bar = document.getElementById('restTimerBar');
+            bar.classList.remove('timer-finished');
+            document.getElementById('stopTimerBtn').classList.add('hidden');
+            if (resetDisplay) {
+                timerSecondsLeft = 0;
+                updateTimerDisplay();
+            }
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timerSecondsLeft / 60).toString().padStart(2, '0');
+            const secs = (timerSecondsLeft % 60).toString().padStart(2, '0');
+            document.getElementById('timerDisplay').textContent = `${mins}:${secs}`;
+        }
+
+        function openCustomTimerModal() {
+            document.getElementById('customTimerModal').classList.remove('hidden');
+        }
+
+        function submitCustomTimer(e) {
+            e.preventDefault();
+            const secs = parseInt(document.getElementById('customSecondsInput').value);
+            if (secs > 0) {
+                closeModal('customTimerModal');
+                startRestTimer(secs);
+            }
+        }
+
+        function playTimerBeep() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.45);
+            } catch (e) {}
+        }
+
+        // ==========================================
+        // التصدير والاستيراد JSON
+        // ==========================================
+        function exportData() {
+            const payload = {
+                version: 5,
+                exportedAt: new Date().toISOString(),
+                routines,
+                logs
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `IronLog_UpperA_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('تم تصدير النسخة الاحتياطية بنجاح', 'success');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.routines && typeof data.routines === 'object') {
+                        routines = data.routines;
+                    }
+                    ensureDefaultSchedulesExist();
+                    renderRoutineTabs();
+                    renderWorkoutCards();
+                    populateExerciseSelects();
+                    updateStats();
+                    renderHistory();
+                    showToast('تم استيراد البيانات بنجاح', 'success');
+                } catch (err) {
+                    showToast('ملف النسخة الاحتياطية غير صالح', 'error');
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        // ==========================================
+        // إدارة النوافذ والتأكيدات والإشعارات
+        // ==========================================
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function openConfirmModal(type, targetId = null) {
+            const modal = document.getElementById('confirmModal');
+            const title = document.getElementById('confirmTitle');
+            const msg = document.getElementById('confirmMessage');
+            const btn = document.getElementById('confirmActionBtn');
+            const iconBox = document.getElementById('confirmIconBox');
+            const icon = document.getElementById('confirmIcon');
+
+            // إعادة ضبط شكل الأيقونة الافتراضي
+            iconBox.className = 'w-14 h-14 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center text-2xl mx-auto mb-3';
+            icon.className = 'fa-solid fa-triangle-exclamation';
+            btn.className = 'flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl transition';
+
+            if (type === 'restoreDefault') {
+                iconBox.className = 'w-14 h-14 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-2xl mx-auto mb-3';
+                icon.className = 'fa-solid fa-wand-magic-sparkles';
+                btn.className = 'flex-1 bg-brand-500 hover:bg-brand-600 text-dark-950 font-extrabold py-3 rounded-xl transition';
+                title.textContent = 'استعادة الجداول الافتراضية؟';
+                msg.textContent = 'سيتم إعادة تمارين Upper A (1-9) و Lower (1-7) و Upper B (1-9) بترتيبها الأصلي مع الحفاظ على سجلات أوزانك السابقة.';
+                btn.onclick = () => {
+                    restoreDefaultSchedules();
+                    closeModal('confirmModal');
+                };
+            } else if (type === 'deleteLog') {
+                title.textContent = 'حذف هذا السجل؟';
+                msg.textContent = 'لن تتمكن من استرجاع هذه المجموعة بعد الحذف.';
+                btn.onclick = () => {
+                    logs = logs.filter(l => l.id !== targetId);
+                    saveData();
+                    renderWorkoutCards();
+                    populateExerciseSelects();
+                    updateStats();
+                    renderHistory();
+                    closeModal('confirmModal');
+                    showToast('تم حذف السجل', 'info');
+                };
+            } else if (type === 'removeExercise') {
+                title.textContent = 'حذف التمرين من الجدول؟';
+                msg.textContent = 'سيتم إزالة التمرين من هذا الجدول مع بقاء سجلاته السابقة في السجل العام.';
+                btn.onclick = () => {
+                    routines[activeDay] = routines[activeDay].filter(e => e.id !== targetId);
+                    routines[activeDay].forEach((item, idx) => item.order = idx + 1);
+                    saveData();
+                    renderRoutineTabs();
+                    renderWorkoutCards();
+                    closeModal('confirmModal');
+                    showToast('تم حذف التمرين من الجدول', 'info');
+                };
+            } else if (type === 'clearAll') {
+                title.textContent = 'مسح جميع السجلات والبيانات التجريبية';
+                msg.textContent = 'سيتم حذف جميع الأوزان المسجلة وإعادة جداول Upper A و Lower و Upper B نظيفة. هل أنت متأكد؟';
+                btn.onclick = () => {
+                    logs = [];
+                    completedToday = {};
+                    routines = {
+                        'Upper A': getDefaultUpperA(),
+                        'Lower': getDefaultLower(),
+                        'Upper B': getDefaultUpperB()
+                    };
+                    activeDay = 'Upper A';
+                    saveData();
+                    renderRoutineTabs();
+                    renderWorkoutCards();
+                    populateExerciseSelects();
+                    updateStats();
+                    renderHistory();
+                    closeModal('confirmModal');
+                    showToast('تم مسح البيانات وإعادة ضبط Upper A و Lower و Upper B', 'info');
+                };
+            }
+            modal.classList.remove('hidden');
+        }
+
+        let toastTimeout = null;
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msgEl = document.getElementById('toastMessage');
+
+            msgEl.textContent = message;
+            if (type === 'error') {
+                icon.className = 'fa-solid fa-circle-xmark text-red-400 text-base';
+            } else if (type === 'pr') {
+                icon.className = 'fa-solid fa-trophy text-amber-400 text-base';
+            } else if (type === 'info') {
+                icon.className = 'fa-solid fa-circle-info text-sky-400 text-base';
+            } else {
+                icon.className = 'fa-solid fa-circle-check text-brand-500 text-base';
+            }
+
+            toast.classList.remove('opacity-0', '-translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-4');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
